@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace Building\Domain\Aggregate;
 
+use Building\Domain\DomainEvent\CheckInAnomalyDetected;
 use Building\Domain\DomainEvent\NewBuildingWasRegistered;
 use Building\Domain\DomainEvent\UserCheckedIn;
 use Building\Domain\DomainEvent\UserCheckedOut;
 use Prooph\EventSourcing\AggregateRoot;
 use Rhumsaa\Uuid\Uuid;
 use Webmozart\Assert\Assert;
+use function array_key_exists;
 
 final class Building extends AggregateRoot
 {
     private ?Uuid $uuid = null;
 
     private ?string $name = null;
+    /** @psalm-var array<string, null> */
+    private array $checkedInUsers = [];
 
     public static function new(string $name) : self
     {
@@ -32,7 +36,13 @@ final class Building extends AggregateRoot
 
         Assert::notNull($id);
 
+        $anomaly = array_key_exists($username, $this->checkedInUsers);
+
         $this->recordThat(UserCheckedIn::toBuilding($id, $username));
+
+        if ($anomaly) {
+            $this->recordThat(CheckInAnomalyDetected::inBuilding($id, $username));
+        }
     }
 
     public function checkOutUser(string $username) : void
@@ -41,7 +51,13 @@ final class Building extends AggregateRoot
 
         Assert::notNull($id);
 
+        $anomaly = ! array_key_exists($username, $this->checkedInUsers);
+
         $this->recordThat(UserCheckedOut::ofBuilding($id, $username));
+
+        if ($anomaly) {
+            $this->recordThat(CheckInAnomalyDetected::inBuilding($id, $username));
+        }
     }
 
     protected function whenNewBuildingWasRegistered(NewBuildingWasRegistered $event) : void
@@ -52,12 +68,17 @@ final class Building extends AggregateRoot
 
     protected function whenUserCheckedIn(UserCheckedIn $event) : void
     {
-        // Empty (on purpose)
+        $this->checkedInUsers[$event->username()] = null;
     }
 
     protected function whenUserCheckedOut(UserCheckedOut $event) : void
     {
-        // Empty (on purpose)
+        unset($this->checkedInUsers[$event->username()]);
+    }
+
+    protected function whenCheckInAnomalyDetected(CheckInAnomalyDetected $event) : void
+    {
+        // Empty, on purpose
     }
 
     /** {@inheritDoc} */
