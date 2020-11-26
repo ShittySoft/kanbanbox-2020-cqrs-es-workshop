@@ -15,7 +15,6 @@ use Whoops\Handler\PrettyPageHandler;
 use Whoops\Run;
 use Zend\Expressive\Application;
 use Zend\Expressive\Router\FastRouteRouter;
-use Zend\Expressive\WhoopsErrorHandler;
 
 call_user_func(function () : void {
     error_reporting(E_ALL);
@@ -32,13 +31,13 @@ call_user_func(function () : void {
     $whoopsHandler = new PrettyPageHandler();
     $whoops        = new Run();
 
-    $whoops->writeToOutput(false);
-    $whoops->allowQuit(false);
+    $whoops->writeToOutput(true);
+    $whoops->allowQuit(true);
     $whoops->pushHandler($whoopsHandler);
 
-    $errorHandler = new WhoopsErrorHandler($whoops, $whoopsHandler);
-    $app = new Application(new FastRouteRouter(), $sm, $errorHandler);
+    $app = new Application(new FastRouteRouter(), $sm);
 
+    $app->raiseThrowables();
     $app->pipeRoutingMiddleware();
 
     $getBodyParameter = static function (Request $request, string $parameter) : string
