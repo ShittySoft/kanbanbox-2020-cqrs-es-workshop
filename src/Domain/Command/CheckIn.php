@@ -47,7 +47,7 @@ final class CheckIn extends Command
     /** {@inheritDoc} */
     protected function setPayload(array $payload)
     {
-        $this->building = Uuid::fromString($payload['username']);
+        $this->building = Uuid::fromString($payload['building']);
         $this->username = $payload['username'];
     }
 }
