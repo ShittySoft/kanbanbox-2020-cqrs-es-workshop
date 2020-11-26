@@ -38,7 +38,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 return new ServiceManager([
     'factories' => [
-        Connection::class => function () {
+        Connection::class => function () : Connection {
             $connection = DriverManager::getConnection([
                 'driverClass' => Driver::class,
                 'path'        => __DIR__ . '/data/db.sqlite3',
@@ -58,7 +58,7 @@ return new ServiceManager([
             return $connection;
         },
 
-        EventStore::class                  => function (ContainerInterface $container) {
+        EventStore::class                  => function (ContainerInterface $container) : EventStore {
             $eventBus   = new EventBus();
             $eventStore = new EventStore(
                 new DoctrineEventStoreAdapter(
@@ -90,17 +90,17 @@ return new ServiceManager([
                     $this->projectors    = $projectors;
                 }
 
-                public function attach(ActionEventEmitter $dispatcher)
+                public function attach(ActionEventEmitter $dispatcher) : void
                 {
                     $dispatcher->attachListener(MessageBus::EVENT_ROUTE, [$this, 'onRoute']);
                 }
 
-                public function detach(ActionEventEmitter $dispatcher)
+                public function detach(ActionEventEmitter $dispatcher) : void
                 {
                     throw new \BadMethodCallException('Not implemented');
                 }
 
-                public function onRoute(ActionEvent $actionEvent)
+                public function onRoute(ActionEvent $actionEvent) : void
                 {
                     $messageName = (string) $actionEvent->getParam(MessageBus::EVENT_PARAM_MESSAGE_NAME);
 
@@ -133,17 +133,17 @@ return new ServiceManager([
 
             $commandBus->utilize(new ServiceLocatorPlugin($container));
             $commandBus->utilize(new class implements ActionEventListenerAggregate {
-                public function attach(ActionEventEmitter $dispatcher)
+                public function attach(ActionEventEmitter $dispatcher) : void
                 {
                     $dispatcher->attachListener(MessageBus::EVENT_ROUTE, [$this, 'onRoute']);
                 }
 
-                public function detach(ActionEventEmitter $dispatcher)
+                public function detach(ActionEventEmitter $dispatcher) : void
                 {
                     throw new \BadMethodCallException('Not implemented');
                 }
 
-                public function onRoute(ActionEvent $actionEvent)
+                public function onRoute(ActionEvent $actionEvent) : void
                 {
                     $actionEvent->setParam(
                         MessageBus::EVENT_PARAM_MESSAGE_HANDLER,

@@ -7,14 +7,13 @@ namespace Building\Domain\Aggregate;
 use Building\Domain\DomainEvent\NewBuildingWasRegistered;
 use Prooph\EventSourcing\AggregateRoot;
 use Rhumsaa\Uuid\Uuid;
+use Webmozart\Assert\Assert;
 
 final class Building extends AggregateRoot
 {
-    /** @var Uuid */
-    private $uuid;
+    private ?Uuid $uuid = null;
 
-    /** @var string */
-    private $name;
+    private ?string $name = null;
 
     public static function new(string $name) : self
     {
@@ -35,7 +34,7 @@ final class Building extends AggregateRoot
         throw new \BadFunctionCallException('To be implemented: I should record a new event on the building');
     }
 
-    protected function whenNewBuildingWasRegistered(NewBuildingWasRegistered $event)
+    protected function whenNewBuildingWasRegistered(NewBuildingWasRegistered $event) : void
     {
         $this->uuid = Uuid::fromString($event->aggregateId());
         $this->name = $event->name();
@@ -44,6 +43,8 @@ final class Building extends AggregateRoot
     /** {@inheritDoc} */
     protected function aggregateId() : string
     {
+        Assert::notNull($this->uuid);
+
         return $this->uuid->toString();
     }
 }

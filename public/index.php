@@ -17,7 +17,7 @@ use Zend\Expressive\Application;
 use Zend\Expressive\Router\FastRouteRouter;
 use Zend\Expressive\WhoopsErrorHandler;
 
-call_user_func(function () {
+call_user_func(function () : void {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 
@@ -36,7 +36,8 @@ call_user_func(function () {
     $whoops->allowQuit(false);
     $whoops->pushHandler($whoopsHandler);
 
-    $app = new Application(new FastRouteRouter(), $sm, new WhoopsErrorHandler($whoops, $whoopsHandler));
+    $errorHandler = new WhoopsErrorHandler($whoops, $whoopsHandler);
+    $app = new Application(new FastRouteRouter(), $sm, $errorHandler);
 
     $app->pipeRoutingMiddleware();
 
@@ -69,7 +70,9 @@ call_user_func(function () {
         $commandBus = $sm->get(CommandBus::class);
         $commandBus->dispatch(Command\RegisterNewBuilding::fromName($getBodyParameter($request, 'name')));
 
-        return $response->withAddedHeader('Location', '/');
+        return $response
+            ->withStatus(302, 'Found')
+            ->withAddedHeader('Location', '/');
     });
 
     $app->get('/building/{buildingId}', function (Request $request, Response $response) : Response {
