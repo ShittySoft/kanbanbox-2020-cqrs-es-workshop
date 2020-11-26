@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Building\Domain\Aggregate;
 
 use Building\Domain\DomainEvent\NewBuildingWasRegistered;
+use Building\Domain\DomainEvent\UserCheckedIn;
 use Prooph\EventSourcing\AggregateRoot;
 use Rhumsaa\Uuid\Uuid;
 use Webmozart\Assert\Assert;
@@ -26,7 +27,11 @@ final class Building extends AggregateRoot
 
     public function checkInUser(string $username) : void
     {
-        throw new \BadFunctionCallException('To be implemented: I should record a new event on the building');
+        $id = $this->uuid;
+
+        Assert::notNull($id);
+
+        $this->recordThat(UserCheckedIn::toBuilding($id, $username));
     }
 
     public function checkOutUser(string $username) : void
@@ -38,6 +43,11 @@ final class Building extends AggregateRoot
     {
         $this->uuid = Uuid::fromString($event->aggregateId());
         $this->name = $event->name();
+    }
+
+    protected function whenUserCheckedIn(UserCheckedIn $event) : void
+    {
+        // Empty (on purpose)
     }
 
     /** {@inheritDoc} */

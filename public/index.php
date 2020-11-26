@@ -86,8 +86,16 @@ call_user_func(function () : void {
         return $response;
     });
 
-    $app->post('/checkin/{buildingId}', function (Request $request, Response $response) use ($sm) : Response {
-        throw new \BadFunctionCallException('To be implemented: I should dispatch a command and redirect back to the previous page');
+    $app->post('/checkin/{buildingId}', function (Request $request, Response $response) use ($sm, $getBodyParameter) : Response {
+        $sm->get(CommandBus::class)
+            ->dispatch(Command\CheckIn::fromBuildingAndUsername(
+                Uuid::fromString($request->getAttribute('buildingId')),
+                $getBodyParameter($request, 'username')
+            ));
+
+        return $response
+            ->withStatus(302, 'Found')
+            ->withAddedHeader('Location', '/building/' . $request->getAttribute('buildingId'));
     });
 
     $app->post('/checkout/{buildingId}', function (Request $request, Response $response) use ($sm) : Response {
