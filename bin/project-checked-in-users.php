@@ -3,6 +3,8 @@
 
 namespace Building\App\Projection;
 
+use Building\Domain\DomainEvent\UserCheckedIn;
+use Building\Domain\DomainEvent\UserCheckedOut;
 use Prooph\EventStore\EventStore;
 use Prooph\EventStore\Stream\StreamName;
 use Psr\Container\ContainerInterface;
@@ -13,9 +15,20 @@ use Psr\Container\ContainerInterface;
 
     $eventStore = $container->get(EventStore::class);
 
-    foreach ($eventStore->load(new StreamName('event_stream')) as $event) {
-        // ... ???
+    /** @psalm-var array<string, array<string, null>> */
+    $usersByBuilding = [];
+
+    foreach ($eventStore->load(new StreamName('event_stream'))->streamEvents() as $event) {
+        if ($event instanceof UserCheckedIn) {
+            $usersByBuilding[$event->aggregateId()][$event->username()] = null;
+        }
+
+        if ($event instanceof UserCheckedOut) {
+            unset($usersByBuilding[$event->aggregateId()][$event->username()]);
+        }
     }
 
-    // file_put_contents(...);
+    foreach ($usersByBuilding as $buildingId => $users) {
+        file_put_contents(__DIR__ . '/../public/' . $buildingId, json_encode(\array_keys($users), \JSON_THROW_ON_ERROR));
+    }
 })();
