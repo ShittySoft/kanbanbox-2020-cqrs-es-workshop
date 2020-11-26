@@ -1,6 +1,6 @@
 {
   "require": {
-    "php": "^7.4.7",
+    "php": "^7.4.3",
     "ext-pdo": "*",
     "ext-pdo_sqlite": "*",
     "container-interop/container-interop": "^1.2.0",
@@ -28,7 +28,10 @@
     "serve": "php -S 0.0.0.0:8080 -t public/"
   },
   "config": {
-    "sort-packages": true
+    "sort-packages": true,
+    "platform": {
+      "php": "7.4.3"
+    }
   },
   "require-dev": {
     "behat/behat": "^3.8.1",
