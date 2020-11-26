@@ -6,6 +6,7 @@ namespace Building\App;
 
 use Building\Domain\Aggregate\Building;
 use Building\Domain\Command;
+use Building\Domain\DomainEvent\CheckInAnomalyDetected;
 use Building\Domain\Repository\BuildingRepositoryInterface;
 use Building\Infrastructure\Repository\BuildingRepository;
 use Doctrine\DBAL\Connection;
@@ -33,6 +34,7 @@ use Prooph\ServiceBus\EventBus;
 use Prooph\ServiceBus\MessageBus;
 use Prooph\ServiceBus\Plugin\ServiceLocatorPlugin;
 use Zend\ServiceManager\ServiceManager;
+use function error_log;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -190,6 +192,27 @@ return new ServiceManager([
 
                 $buildings->store($building);
             };
+        },
+        Command\NotifySecurityAboutAnomaly::class => function () : callable {
+            return function (Command\NotifySecurityAboutAnomaly $command) : void {
+                error_log(\sprintf(
+                    'Check-in violation in buildin "%s" by user "%s"',
+                    $command->building()->toString(),
+                    $command->username()
+                ));
+            };
+        },
+        CheckInAnomalyDetected::class . '-listeners' => function (ContainerInterface $container) : array {
+            $commandBus = $container->get(CommandBus::class);
+
+            return [
+                function (CheckInAnomalyDetected $anomalyDetected) use ($commandBus): void {
+                    $commandBus->dispatch(Command\NotifySecurityAboutAnomaly::inBuilding(
+                        $anomalyDetected->building(),
+                        $anomalyDetected->username()
+                    ));
+                },
+            ];
         },
         BuildingRepositoryInterface::class => function (ContainerInterface $container) : BuildingRepositoryInterface {
             return new BuildingRepository(
